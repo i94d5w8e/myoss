@@ -6,9 +6,9 @@ CURRENT_DIR=$(
 )
 
 BASE_PATH="/opt/ray-cli"
-APP_DOCKER_IMAGE="wudgaby/ray-cli"
-SCRIPT_URL="https://raw.githubusercontent.com/wudgaby/scripts/main/install.sh"
-PACKAGE_DOWNLOAD_URL="https://goo.su/zhewvm"
+APP_DOCKER_IMAGE="i94d5w8e/ray-cli"
+SCRIPT_URL="https://goo.su/Bs1w0B6"
+PACKAGE_DOWNLOAD_URL="https://goo.su/dqvmXS"
 PACKAGE_FILE_TAR="ray-cli.zip"
 APP_API_ADD_NODE="https://test.flinktool.my/api_v1/nodes/add"
 APP_COMPOSE_YML="docker-compose.yml"
@@ -168,9 +168,14 @@ before_show_menu() {
 download(){
     echo "下载安装包: ${PACKAGE_DOWNLOAD_URL}"
 
-    curl -Lks "$PACKAGE_DOWNLOAD_URL" -o $PACKAGE_FILE_TAR
+    HTTP_RESPONSE=$(curl -Lks "$PACKAGE_DOWNLOAD_URL" -w "%{http_code}" -o $PACKAGE_FILE_TAR)
     if [ ! -f $PACKAGE_FILE_TAR ]; then
         echo "下载失败"
+        exit 1
+    fi
+
+    if [ "$HTTP_RESPONSE" -eq 404 ]; then
+        echo "未找到脚本"
         exit 1
     fi
 
