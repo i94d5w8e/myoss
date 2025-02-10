@@ -462,8 +462,8 @@ changeHostAndKey(){
     read -r apikey
 
     if [ "${apikey}" != "" ]; then
-        sed -i "s/ApiKey: .\+/ApiKey: $apikey/g" $BASE_PATH/cli/config/config.yml
-        sed -i "s/ApiHost: .\+/ApiHost: $APP_API_HOST/g" $BASE_PATH/cli/config/config.yml
+        sed -i "s|ApiKey: .\+|ApiKey: $apikey|g" $BASE_PATH/cli/config/config.yml
+        sed -i "s|ApiHost: .\+|ApiHost: $APP_API_HOST|g" $BASE_PATH/cli/config/config.yml
     fi
 
     if [ $# = 0 ]; then
