@@ -181,7 +181,7 @@ download(){
 
     case "$PACKAGE_FILE_TAR" in
         *.zip)
-            unzip -n -d "$BASE_PATH" "$PACKAGE_FILE_TAR"
+            unzip -o -d "$BASE_PATH" "$PACKAGE_FILE_TAR"
             ;;
         *.tar.gz)
             tar zxf "$PACKAGE_FILE_TAR" -C "$BASE_PATH"
@@ -196,6 +196,8 @@ download(){
             exit 1
             ;;
     esac
+
+    echo "已完成下载安装"
 }
 
 install() {
