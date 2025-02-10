@@ -447,23 +447,29 @@ addNodeAndApply(){
 changeConfigNodeId(){
     echo "> 修改节点id并重启服务"
 
-    printf "请输入节点id: "
-    read -r num 
-    sed -i "s/NodeID: [0-9]\+/NodeID: $num/g" $BASE_PATH/cli/config/config.yml
-    $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
+    printf "请输入节点id(不输入会跳过): "
+    read -r nodeId 
 
+    if [ "${nodeId}" != "" ]; then
+        sed -i "s/NodeID: [0-9]\+/NodeID: $nodeId/g" $BASE_PATH/cli/config/config.yml
+        $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
+    fi
+    
     if [ $# = 0 ]; then
         before_show_menu
     fi
 }
 
 changeHostAndKey(){
+    echo "> 修改APIKey和Host"
+
+    sed -i "s|ApiHost: .\+|ApiHost: \"$APP_API_HOST\"|g" $BASE_PATH/cli/config/config.yml
+
     printf "请输入ApiKey(不输入会跳过): "
     read -r apikey
 
     if [ "${apikey}" != "" ]; then
-        sed -i "s|ApiKey: .\+|ApiKey: $apikey|g" $BASE_PATH/cli/config/config.yml
-        sed -i "s|ApiHost: .\+|ApiHost: $APP_API_HOST|g" $BASE_PATH/cli/config/config.yml
+        sed -i "s|ApiKey: .\+|ApiKey: \"$apikey\"|g" $BASE_PATH/cli/config/config.yml
     fi
 
     if [ $# = 0 ]; then
