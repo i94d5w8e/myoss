@@ -7,11 +7,14 @@ CURRENT_DIR=$(
 
 BASE_PATH="/opt/ray-cli"
 APP_DOCKER_IMAGE="i94d5w8e/ray-cli"
+APP_COMPOSE_YML="docker-compose.yml"
+
 SCRIPT_URL="https://goo.su/Bs1w0B6"
 PACKAGE_DOWNLOAD_URL="https://goo.su/dqvmXS"
 PACKAGE_FILE_TAR="ray-cli.zip"
-APP_API_ADD_NODE="https://test.flinktool.my/api_v1/nodes/add"
-APP_COMPOSE_YML="docker-compose.yml"
+
+APP_API_HOST="https://test.flinktool.my"
+APP_API_ADD_NODE="$APP_API_HOST/api_v1/nodes/add"
 
 red='\033[0;31m'
 green='\033[0;32m'
@@ -225,6 +228,9 @@ install() {
     fi
 
     download
+
+    changeHostAndKey
+    changeConfigNodeId
 
     if [ $# = 0 ]; then
         before_show_menu
@@ -445,6 +451,24 @@ changeConfigNodeId(){
     read -r num 
     sed -i "s/NodeID: [0-9]\+/NodeID: $num/g" $BASE_PATH/cli/config/config.yml
     $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
+
+    if [ $# = 0 ]; then
+        before_show_menu
+    fi
+}
+
+changeHostAndKey(){
+    printf "请输入ApiKey(不输入会跳过): "
+    read -r apikey
+
+    if [ "${apikey}" != "" ]; then
+        sed -i "s/ApiKey: .\+/ApiKey: $apikey/g" $BASE_PATH/cli/config/config.yml
+        sed -i "s/ApiHost: .\+/ApiHost: $APP_API_HOST/g" $BASE_PATH/cli/config/config.yml
+    fi
+
+    if [ $# = 0 ]; then
+        before_show_menu
+    fi
 }
 
 
@@ -463,14 +487,14 @@ show_usage() {
 show_menu() {
     println "${green}管理脚本${plain}"
     println "${green}1.${plain}  安装节点客户端"
-    println "${green}2.${plain}  重启并更新"
+    println "${green}2.${plain}  更新并重启"
     println "${green}3.${plain}  查看节点日志"
     println "${green}4.${plain}  卸载节点客户端"
     echo "————————————————"
     println "${green}5.${plain}  更新脚本"
     echo "————————————————"
     println "${green}6.${plain}  安装BBR"
-    println "${green}7.${plain}  修改节点id"
+    println "${green}7.${plain}  修改配置"
     println "${green}8.${plain}  新增节点并应用"
     echo "————————————————"
     println "${green}0.${plain}  退出脚本"
@@ -499,7 +523,8 @@ show_menu() {
             bbr
             ;;
         7)
-            changeConfigNodeId
+            changeHostAndKey 0
+            changeConfigNodeId 0
             ;;
         8)
             addNodeAndApply
