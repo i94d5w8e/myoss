@@ -462,13 +462,24 @@ changeConfigNodeId(){
 
 changeHostAndKey(){
     echo "> 修改APIKey和Host"
+    
+    if [ ! -d "$BASE_PATH" ]; then
+        echo "请先安装"
+        before_show_menu
+    fi
 
     sed -i "s|ApiHost: .\?|ApiHost: \"$APP_API_HOST\"|g" $BASE_PATH/cli/config/config.yml
 
-    printf "请输入ApiKey(不输入会跳过): "
-    read -r apikey
+    local_apikey="${ENV_APIKEY:-}"
+    echo "当前环境变量中: ENV_APIKEY: $local_apikey"
 
-    if [ "${apikey}" != "" ]; then
+    if [ "${local_apikey}" = "" ]; then
+        printf "请输入ApiKey(不输入会跳过): "
+        read -r apikey
+        local_apikey="${apikey:-}"
+    fi
+
+    if [ "${local_apikey}" != "" ]; then
         sed -i "s|ApiKey: .\?|ApiKey: \"$apikey\"|g" $BASE_PATH/cli/config/config.yml
         $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
     fi
