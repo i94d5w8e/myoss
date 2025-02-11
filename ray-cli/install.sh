@@ -329,7 +329,12 @@ addNodeAndApply(){
         err "未找到依赖 jq, 请先安装。"
         exit 1
     fi
-    
+
+    local_api_host="${ENV_APIHOST:-}"
+    echo "当前环境变量: ENV_APIHOST: $local_api_host"
+    if [ "${local_api_host}" != "" ]; then
+        APP_API_HOST=$local_api_host
+    fi
     
     printf "请输入请求数据文件路径(如：/path/node.json. 默认是当前目录下的node.json): "
     read -r data_json_path
@@ -468,10 +473,15 @@ changeHostAndKey(){
         before_show_menu
     fi
 
+    local_api_host="${ENV_APIHOST:-}"
+    echo "当前环境变量: ENV_APIHOST: $local_api_host"
+    if [ "${local_api_host}" != "" ]; then
+        APP_API_HOST=$local_api_host
+    fi
     sed -i "s|ApiHost: .\?|ApiHost: \"$APP_API_HOST\"|g" $BASE_PATH/cli/config/config.yml
 
     local_apikey="${ENV_APIKEY:-}"
-    echo "当前环境变量中: ENV_APIKEY: $local_apikey"
+    echo "当前环境变量: ENV_APIKEY: $local_apikey"
 
     if [ "${local_apikey}" = "" ]; then
         printf "请输入ApiKey(不输入会跳过): "
@@ -492,6 +502,7 @@ changeHostAndKey(){
 
 show_usage() {
     echo "管理脚本使用方法: "
+    echo "支持(环境变量ENV_APIKEY, ENV_APIHOST). "
     echo "--------------------------------------------------------"
     echo "./install.sh                    - 显示管理菜单"
     echo "./install.sh install            - 安装节点客户端"
@@ -503,7 +514,8 @@ show_usage() {
 }
 
 show_menu() {
-    println "${green}管理脚本${plain}"
+    println "${green}管理脚本.${plain}"
+    println "${green}支持(环境变量ENV_APIKEY, ENV_APIHOST). ${plain}"
     println "${green}1.${plain}  安装节点客户端"
     println "${green}2.${plain}  更新并重启"
     println "${green}3.${plain}  查看节点日志"
