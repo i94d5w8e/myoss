@@ -37,9 +37,9 @@ declare -A HOSTS
 
 # Rsync配置
 RSYNC_REMOTE_PATH="/home/ray-cli/cli/config/logs/"
-RSYNC_LOCAL_PATH="/home/ray-cli/logs/"
-RSYNC_LOG_FILE="${SCRIPT_DIR}/logs/rsync.log"
-RSYNC_ERROR_LOG="${SCRIPT_DIR}/logs/rsync_errors.log"
+RSYNC_LOCAL_PATH="${SCRIPT_DIR}/logbak/{host}/logs/"
+RSYNC_LOG_FILE="${LOG_DIR}/rsync.log"
+RSYNC_ERROR_LOG="${LOG_DIR}/rsync_errors.log"
 
 # 日志函数
 function log() {
@@ -773,12 +773,18 @@ function rsync_log() {
     
     for host_info in "${HOSTS[@]}"; do
         IFS=',' read -r ip port user password <<< "$host_info"
-        info "正在从 $ip 同步日志..."
+
+        # 替换路径中的主机占位符
+        local current_path=${RSYNC_LOCAL_PATH/\{host\}/$ip}
+        # 确保目标目录存在
+        mkdir -p "$current_path"
         
+        info "正在从 $ip 同步 $RSYNC_REMOTE_PATH 日志 -> $current_path"
+
         if rsync -avzP \
             -e "ssh -p $port" \
             "$user@$ip:$RSYNC_REMOTE_PATH" \
-            "$RSYNC_LOCAL_PATH" \
+            "$current_path" \
             --log-file="$RSYNC_LOG_FILE" \
             2>> "$RSYNC_ERROR_LOG"; then
             
@@ -1084,7 +1090,7 @@ function show_help() {
     2. ssh-copy-id      批量传输公钥
     3. exec-command     批量执行命令
     4. exec-script      批量执行脚本
-    5. sync-log         同步日志
+    5. sync-log         同步远程日志
     6. set-cron         设置定时任务
     7. clean            清理痕迹
     8. list-hosts       列出主机列表
