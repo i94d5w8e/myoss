@@ -228,10 +228,12 @@ install() {
     fi
 
     download
-    $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML pull
+    sudo $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML pull
 
     changeHostAndKey 1
     changeConfigNodeId 1
+
+    sudo $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML up -d
 
     if [ $# = 0 ]; then
         before_show_menu
