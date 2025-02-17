@@ -228,6 +228,7 @@ install() {
     fi
 
     download
+    $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML pull
 
     changeHostAndKey 1
     changeConfigNodeId 1
@@ -475,25 +476,33 @@ changeHostAndKey(){
 
     local_api_host="${ENV_APIHOST:-}"
     echo "当前API网站: ENV_APIHOST: $local_api_host"
+    if [ "${local_api_host}" = "" ]; then
+        printf "请输入API HOST: "
+        read -r apihost
+        local_api_host="${apihost:-}"
+    fi
+
     if [ "${local_api_host}" != "" ]; then
         APP_API_HOST=$local_api_host
+        sed -i "s|ApiHost: .\+|ApiHost: \"$local_api_host\"|g" $BASE_PATH/cli/config/config.yml
     fi
-    sed -i "s|ApiHost: .\+|ApiHost: \"$APP_API_HOST\"|g" $BASE_PATH/cli/config/config.yml
-
+    
     local_apikey="${ENV_APIKEY:-}"
     echo "当前API KEY: ENV_APIKEY: $local_apikey"
-
     if [ "${local_apikey}" = "" ]; then
-        printf "请输入API KEY(可跳过): "
+        printf "请输入API KEY: "
         read -r apikey
         local_apikey="${apikey:-}"
     fi
 
     if [ "${local_apikey}" != "" ]; then
         sed -i "s|ApiKey: .\+|ApiKey: \"$local_apikey\"|g" $BASE_PATH/cli/config/config.yml
-        $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
     fi
 
+    if [ "${local_api_host}" != "" ] || [ "${local_apikey}" != "" ]; then
+        $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
+    fi
+    
     if [ $# = 0 ]; then
         before_show_menu
     fi
