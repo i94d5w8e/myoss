@@ -508,8 +508,8 @@ changeHostAndKey(){
     fi
 }
 
-showConfig(){
-    echo "> 查看配置"
+showConfig() {
+    echo "> 获取配置"
     cat $BASE_PATH/cli/config/config.yml
     if [ $# = 0 ]; then
         before_show_menu
@@ -526,6 +526,7 @@ show_usage() {
     echo "./install.sh show_log           - 查看客户端日志"
     echo "./install.sh uninstall          - 卸载客户端"
     echo "./install.sh brr                - 安装BBR"
+    echo "./install.sh show_config        - 查看配置"
     echo "--------------------------------------------------------"
 }
 
@@ -577,7 +578,7 @@ show_menu() {
             addNodeAndApply
             ;;
         9)
-            showConfig 0
+            showConfig
             ;;
         *)
             err "请输入正确的数字 [0-8]"
@@ -606,6 +607,9 @@ if [ $# -gt 0 ]; then
             ;;
         "bbr")
             bbr 0
+            ;;
+        "show_config")
+            showConfig 0
             ;;
         *) show_usage ;;
     esac
