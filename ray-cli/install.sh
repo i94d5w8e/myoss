@@ -454,13 +454,19 @@ addNodeAndApply(){
 }
 
 changeConfigNodeId(){
-    echo "> 修改节点id并重启服务"
+    echo "> 修改节点id"
 
-    printf "请输入节点id(可跳过): "
-    read -r nodeId 
 
-    if [ "${nodeId}" != "" ]; then
-        sed -i "s|NodeID: .\+|NodeID: $nodeId|g" $BASE_PATH/cli/config/config.yml
+    local_nodeId="${ENV_NODE_ID:-}"
+    echo "当前节点id: ENV_NODE_ID: $local_nodeId"
+    if [ "${local_nodeId}" = "" ]; then
+        printf "请输入节点id(可跳过): "
+        read -r nodeId 
+        local_nodeId="${nodeId:-}"
+    fi
+
+    if [ "${local_nodeId}" != "" ]; then
+        sed -i "s|NodeID: .\+|NodeID: $local_nodeId|g" $BASE_PATH/cli/config/config.yml
         $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
     fi
     
@@ -522,7 +528,7 @@ showConfig() {
 show_usage() {
     echo "版本: $VERSION"
     echo "脚本使用方法: "
-    echo "支持(环境变量: ENV_APIKEY, ENV_APIHOST). "
+    echo "支持(环境变量: ENV_APIKEY, ENV_APIHOST, ENV_NODE_ID). "
     echo "--------------------------------------------------------"
     echo "./install.sh                    - 显示菜单"
     echo "./install.sh install            - 安装客户端"
@@ -537,7 +543,7 @@ show_usage() {
 show_menu() {
     println "${green}${plain}版本: $VERSION"
     println "${green}${plain}脚本使用方法:"
-    println "${green}${plain}支持环境变量: ENV_APIKEY, ENV_APIHOST "
+    println "${green}${plain}支持环境变量: ENV_APIKEY, ENV_APIHOST, ENV_NODE_ID "
     println "${green}1.${plain}  安装节点客户端"
     println "${green}2.${plain}  更新客户端并重启"
     println "${green}3.${plain}  查看客户端日志"
