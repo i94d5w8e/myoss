@@ -13,7 +13,7 @@ SCRIPT_URL="https://goo.su/Bs1w0B6"
 PACKAGE_DOWNLOAD_URL="https://goo.su/dqvmXS"
 PACKAGE_FILE_TAR="ray-cli.zip"
 
-APP_API_HOST="https://test.flinktool.my"
+APP_API_HOST=""
 APP_API_ADD_NODE="$APP_API_HOST/api_v1/nodes/add"
 
 red='\033[0;31m'
@@ -229,8 +229,8 @@ install() {
 
     download
 
-    changeHostAndKey
-    changeConfigNodeId
+    changeHostAndKey 1
+    changeConfigNodeId 1
 
     if [ $# = 0 ]; then
         before_show_menu
@@ -444,7 +444,7 @@ addNodeAndApply(){
     if [ "${result}" = "true" ]; then
         echo "节点添加成功,修改配置并重启服务"
 
-        sed -i "s|NodeID: .\?|NodeID: $id|g" $BASE_PATH/cli/config/config.yml
+        sed -i "s|NodeID: .\+|NodeID: $id|g" $BASE_PATH/cli/config/config.yml
         $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
     fi
 }
@@ -452,11 +452,11 @@ addNodeAndApply(){
 changeConfigNodeId(){
     echo "> 修改节点id并重启服务"
 
-    printf "请输入节点id(不输入会跳过): "
+    printf "请输入节点id(可跳过): "
     read -r nodeId 
 
     if [ "${nodeId}" != "" ]; then
-        sed -i "s|NodeID: .\?|NodeID: $nodeId|g" $BASE_PATH/cli/config/config.yml
+        sed -i "s|NodeID: .\+|NodeID: $nodeId|g" $BASE_PATH/cli/config/config.yml
         $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
     fi
     
@@ -474,23 +474,23 @@ changeHostAndKey(){
     fi
 
     local_api_host="${ENV_APIHOST:-}"
-    echo "当前环境变量: ENV_APIHOST: $local_api_host"
+    echo "当前API网站: ENV_APIHOST: $local_api_host"
     if [ "${local_api_host}" != "" ]; then
         APP_API_HOST=$local_api_host
     fi
-    sed -i "s|ApiHost: .\?|ApiHost: \"$APP_API_HOST\"|g" $BASE_PATH/cli/config/config.yml
+    sed -i "s|ApiHost: .\+|ApiHost: \"$APP_API_HOST\"|g" $BASE_PATH/cli/config/config.yml
 
     local_apikey="${ENV_APIKEY:-}"
-    echo "当前环境变量: ENV_APIKEY: $local_apikey"
+    echo "当前API KEY: ENV_APIKEY: $local_apikey"
 
     if [ "${local_apikey}" = "" ]; then
-        printf "请输入ApiKey(不输入会跳过): "
+        printf "请输入API KEY(可跳过): "
         read -r apikey
         local_apikey="${apikey:-}"
     fi
 
     if [ "${local_apikey}" != "" ]; then
-        sed -i "s|ApiKey: .\?|ApiKey: \"$apikey\"|g" $BASE_PATH/cli/config/config.yml
+        sed -i "s|ApiKey: .\+|ApiKey: \"$apikey\"|g" $BASE_PATH/cli/config/config.yml
         $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
     fi
 
@@ -499,10 +499,17 @@ changeHostAndKey(){
     fi
 }
 
+showConfig(){
+    echo "> 查看配置"
+    cat $BASE_PATH/cli/config/config.yml
+    if [ $# = 0 ]; then
+        before_show_menu
+    fi
+}
 
 show_usage() {
     echo "脚本使用方法: "
-    echo "支持(环境变量ENV_APIKEY, ENV_APIHOST). "
+    echo "支持(环境变量: ENV_APIKEY, ENV_APIHOST). "
     echo "--------------------------------------------------------"
     echo "./install.sh                    - 显示菜单"
     echo "./install.sh install            - 安装客户端"
@@ -515,7 +522,7 @@ show_usage() {
 
 show_menu() {
     println "${green}${plain}脚本使用方法:"
-    println "${green}支持(环境变量ENV_APIKEY, ENV_APIHOST). ${plain}"
+    println "${green}${plain}支持环境变量: ENV_APIKEY, ENV_APIHOST "
     println "${green}1.${plain}  安装节点客户端"
     println "${green}2.${plain}  更新客户端并重启"
     println "${green}3.${plain}  查看客户端日志"
@@ -526,6 +533,7 @@ show_menu() {
     println "${green}6.${plain}  安装BBR"
     println "${green}7.${plain}  修改节点配置"
     println "${green}8.${plain}  新增节点并应用"
+    println "${green}9.${plain}  查看节点配置"
     echo "————————————————"
     println "${green}0.${plain}  退出脚本"
 
@@ -558,6 +566,9 @@ show_menu() {
             ;;
         8)
             addNodeAndApply
+            ;;
+        9)
+            showConfig 0
             ;;
         *)
             err "请输入正确的数字 [0-8]"
