@@ -535,6 +535,7 @@ show_usage() {
 }
 
 show_menu() {
+    println "${green}${plain}版本: $VERSION"
     println "${green}${plain}脚本使用方法:"
     println "${green}${plain}支持环境变量: ENV_APIKEY, ENV_APIHOST "
     println "${green}1.${plain}  安装节点客户端"
