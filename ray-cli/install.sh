@@ -4,6 +4,7 @@ CURRENT_DIR=$(
    cd "$(dirname "$0")" || exit
    pwd
 )
+readonly VERSION="1.0.0"
 
 BASE_PATH="/opt/ray-cli"
 APP_DOCKER_IMAGE="i94d5w8e/ray-cli"
@@ -519,6 +520,7 @@ showConfig() {
 }
 
 show_usage() {
+    echo "版本: $VERSION"
     echo "脚本使用方法: "
     echo "支持(环境变量: ENV_APIKEY, ENV_APIHOST). "
     echo "--------------------------------------------------------"
