@@ -490,7 +490,7 @@ changeHostAndKey(){
     fi
 
     if [ "${local_apikey}" != "" ]; then
-        sed -i "s|ApiKey: .\+|ApiKey: \"$apikey\"|g" $BASE_PATH/cli/config/config.yml
+        sed -i "s|ApiKey: .\+|ApiKey: \"$local_apikey\"|g" $BASE_PATH/cli/config/config.yml
         $DOCKER_COMPOSE_COMMAND -f ${BASE_PATH}/$APP_COMPOSE_YML restart
     fi
 
