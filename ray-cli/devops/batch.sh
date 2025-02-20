@@ -32,8 +32,6 @@ mkdir -p "${LOG_DIR}"
 # 全局变量
 declare -A HOSTS
 declare -i VERBOSE=0
-# 主机数组声明
-declare -A HOSTS
 
 # Rsync配置
 RSYNC_REMOTE_PATH="/home/ray-cli/cli/config/logs/"
@@ -369,7 +367,7 @@ function batch_exec_install() {
         while [[ $retry_count -lt $MAX_RETRIES ]]; do
             local start_time=$(date +%s)
             
-            info "执行命令: ssh -p $port $user@$host  $script"
+            info "执行命令: ssh -p $port $user@$host $script"
             output=$(timeout $TIMEOUT ssh \
                 -o ConnectTimeout=$CONNECT_TIMEOUT \
                 -o StrictHostKeyChecking=no \
@@ -688,7 +686,7 @@ function load_hosts() {
     local invalid_count=0
     
     # 读取配置文件
-    while IFS=',' read -r host port user password _ || [[ -n "$host" ]]; do
+    while IFS=',' read -r host port user password apihost apikey nodeid || [[ -n "$host" ]]; do
         ((line_number++))
         
         # 跳过注释和空行
@@ -700,6 +698,9 @@ function load_hosts() {
         port=$(echo "${port:-$DEFAULT_PORT}" | tr -d '[:space:]')
         user=$(echo "${user:-$DEFAULT_USER}" | tr -d '[:space:]')
         password=$(echo "$password" | tr -d '[:space:]')
+        apihost=$(echo "$apihost" | tr -d '[:space:]')
+        apikey=$(echo "$apikey" | tr -d '[:space:]')
+        nodeid=$(echo "$nodeid" | tr -d '[:space:]')
         
         # 验证必要字段
         if [[ -z "$host" || -z "$password" ]]; then
@@ -709,7 +710,7 @@ function load_hosts() {
         fi
         
         # 存储主机信息
-        HOSTS[$host_count]="$host,$port,$user,$password"
+        HOSTS[$host_count]="$host,$port,$user,$password,$apihost,$apikey,$nodeid"
         ((host_count++))
         
         info "添加主机: $host:$port ($user)"
@@ -740,13 +741,13 @@ function list_hosts() {
     needHosts || return 0
 
     info "当前主机配置:"
-    printf "%-3s %-20s %-10s %-10s %-10s\n" "序号" "主机" "端口" "用户" "密码"
+    printf "%-3s %-20s %-10s %-10s %-10s %-20s\n" "序号" "主机" "端口" "用户" "密码" "其他"
     echo "--------------------------------------------------------------"
 
-    local i=0
+    local i=1
     for host_info in "${HOSTS[@]}"; do
-        IFS=',' read -r host port user _ <<< "$host_info"
-        printf "%-3d %-20s %-10s %-10s %-15s\n" "$i" "$host" "$port" "$user" "*****"
+        IFS=',' read -r host port user password apihost apikey nodeid <<< "$host_info"
+        printf "%-3d %-20s %-10s %-10s %-15s %-20s\n" "$i" "$host" "$port" "$user" "*****" "$apihost $apikey $nodeid"
         ((i++))
     done
     echo "--------------------------------------------------------------"
@@ -1255,7 +1256,6 @@ EOF
 }
 
 function show_menu() {
-    clear
     echo "========== 批量操作菜单 =========="
     echo "1.  生成SSH密钥"
     echo "2.  分发SSH公钥"
@@ -1508,6 +1508,7 @@ function main() {
             warn "操作失败，按回车键继续..."
             read -r
         }
+        clear
     done
 }
 
