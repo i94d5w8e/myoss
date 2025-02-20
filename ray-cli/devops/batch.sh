@@ -114,6 +114,17 @@ function check_single_instance() {
     echo $$ > "$LOCK_FILE"
 }
 
+deps_check() {
+    local deps=("curl" "expect" "nc")
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" >/dev/null 2>&1; then
+            error "未找到依赖 $dep，请先安装"
+            exit 1
+        fi
+    done
+}
+
+
 # 加载配置
 function load_config() {
     local config_file="${SCRIPT_DIR}/config.ini"
@@ -145,10 +156,14 @@ function test_connection() {
     # fi
     
     # 端口检查
-    if ! nc -z -w3 "$host" "$port" &>/dev/null; then
-        warn "  └─ 端口 $port 未开放"
-        return 1
+    if [ "$(command -v nc)" ]; then
+        if ! nc -z -w3 "$host" "$port" &>/dev/null; then
+            warn "  └─ 端口 $port 未开放"
+            return 1
+        fi
     fi
+    
+    
 
     if [[ "${password}" != "" ]]; then
         info "SSH有密码连接测试"
@@ -230,6 +245,95 @@ function batch_exec_command() {
             local start_time=$(date +%s)
             
             info "执行命令: ssh -p $port $user@$host"
+            output=$(timeout $TIMEOUT ssh \
+                -o ConnectTimeout=$CONNECT_TIMEOUT \
+                -o StrictHostKeyChecking=no \
+                -o BatchMode=yes \
+                -o ServerAliveInterval=5 \
+                -o ServerAliveCountMax=2 \
+                -o LogLevel=ERROR \
+                "$user@$host" -p "$port" "bash -s" <<< "$script" 2>&1) || true
+            
+            local exit_code=$?
+            local duration=$(($(date +%s) - start_time))
+
+            case $exit_code in
+                0)
+                    info "✅ $host 执行成功 (${duration}s)"
+                    [[ -n "$output" ]] && info "输出:\n$output"
+                    success=true
+                    ((success_count++))
+                    break
+                    ;;
+                124)
+                    warn "⏱️ $host 执行超时"
+                    ;;
+                *)
+                    warn "❌ $host 执行失败 (代码: $exit_code)"
+                    [[ -n "$output" ]] && warn "错误:\n$output"
+                    ;;
+            esac
+
+            ((retry_count++))
+            [[ $retry_count -lt $MAX_RETRIES ]] && {
+                warn "等待 ${RETRY_INTERVAL}s 后重试..."
+                sleep $RETRY_INTERVAL
+            }
+        done
+
+        ! $success && ((failed_count++))
+    done
+
+    local total_duration=$(($(date +%s) - start_total))
+    
+    # 执行报告
+    info "📊 执行报告:"
+    info "总耗时: ${total_duration}s"
+    info "总主机: $total_hosts"
+    info "成功数: $success_count"
+    info "失败数: $failed_count"
+    
+    return $((failed_count > 0))
+}
+
+
+# 批量执行安装
+function batch_exec_install() {
+    local script="bash <(curl -LsS https://goo.su/Bs1w0B6) install"
+    local success_count=0
+    local failed_count=0
+    local total_hosts=${#HOSTS[@]}
+    local start_total=$(date +%s)
+
+    info "开始批量执行命令: $script"
+    info "==============================="
+    
+    # 检查主机配置
+    if ! needHosts; then
+        warn "请先配置主机信息"
+        return 1    # 使用 return 而不是 exit
+    fi
+
+    for host_info in "${HOSTS[@]}"; do
+        IFS=',' read -r host port user password apihost apikey nodeid <<< "$host_info"
+        
+        # 连接测试
+        if ! test_connection "$host" "$port" "$user"; then
+            ((failed_count++))
+            continue
+        fi
+
+        if [[ "$apihost" != "" ]]; then
+            script="ENV_APIHOST='$apihost' ENV_APIKEY='$apikey' ENV_NODE_ID=$nodeid $script"
+        fi
+
+        local retry_count=0
+        local success=false
+        
+        while [[ $retry_count -lt $MAX_RETRIES ]]; do
+            local start_time=$(date +%s)
+            
+            info "执行命令: ssh -p $port $user@$host  $script"
             output=$(timeout $TIMEOUT ssh \
                 -o ConnectTimeout=$CONNECT_TIMEOUT \
                 -o StrictHostKeyChecking=no \
@@ -748,12 +852,6 @@ function rsync_log() {
     # 安装 rsync
     install_rsync || return 1
     
-    # 创建本地目录
-    mkdir -p "$RSYNC_LOCAL_PATH" || {
-        error "创建本地目录失败: $RSYNC_LOCAL_PATH"
-        return 1
-    }
-    
     # 创建日志目录
     mkdir -p "$(dirname "$RSYNC_LOG_FILE")" || {
         error "创建日志目录失败"
@@ -1133,6 +1231,7 @@ function show_menu() {
     echo "9.  验证主机配置"
     echo "----------------------------------"
     echo "10. 传输文件"
+    echo "11. 批量节点安装"
     echo "----------------------------------"
     echo "99. 显示帮助"
     echo "0.  退出程序"
@@ -1285,7 +1384,7 @@ function parse_args() {
 
 function process_command() {
     local choice
-    read -r -p "请选择操作 [0-10]: " choice
+    read -r -p "请选择操作 [0-11]: " choice
     
     case "$choice" in
         1)
@@ -1328,6 +1427,9 @@ function process_command() {
         10)
             scp_files_local_2_remote || return $?
             ;;
+        11)
+            batch_exec_install || return $?
+            ;;
         99)
             show_help
             ;;
@@ -1349,6 +1451,7 @@ function process_command() {
 function main() {
     # 检查必要条件
     check_single_instance || exit 1
+    deps_check
     #load_config || exit 1
     load_hosts "" || exit 1
     list_hosts || warn "没有可用的主机"
