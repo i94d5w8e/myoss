@@ -230,7 +230,7 @@ function batch_exec_command() {
     fi
 
     for host_info in "${HOSTS[@]}"; do
-        IFS=',' read -r host port user password <<< "$host_info"
+        IFS=',' read -r host port user password _ <<< "$host_info"
         
         # 连接测试
         if ! test_connection "$host" "$port" "$user"; then
@@ -415,7 +415,7 @@ function batch_exec_script() {
     fi
 
     for host_info in "${HOSTS[@]}"; do
-        IFS=',' read -r host port user password <<< "$host_info"
+        IFS=',' read -r host port user password _ <<< "$host_info"
         
         # 连接测试
         if ! test_connection "$host" "$port" "$user"; then
@@ -577,7 +577,7 @@ function ssh_copy_id() {
     local failed_count=0
     
     for host_info in "${HOSTS[@]}"; do
-        IFS=',' read -r host port user password <<< "$host_info"
+        IFS=',' read -r host port user password _ <<< "$host_info"
         info "正在处理主机: $host"
         
         # 检查连接
@@ -603,7 +603,7 @@ function ssh_copy_id() {
                 expect eof
                 catch wait result
                 exit [lindex \$result 3]
-            "
+            " &>/dev/null
             
         elif command -v sshpass >/dev/null 2>&1; then
             info "使用 sshpass 分发公钥"
@@ -652,7 +652,7 @@ function load_hosts() {
     local invalid_count=0
     
     # 读取配置文件
-    while IFS=',' read -r host port user password || [[ -n "$host" ]]; do
+    while IFS=',' read -r host port user password _ || [[ -n "$host" ]]; do
         ((line_number++))
         
         # 跳过注释和空行
@@ -737,7 +737,7 @@ function validate_hosts() {
     declare -A validation_results
     
     for host_info in "${HOSTS[@]}"; do
-        IFS=',' read -r host port user password <<< "$host_info"
+        IFS=',' read -r host port user password _ <<< "$host_info"
         info "正在验证: $host:$port ($user)"
         
         local error_msg=""
@@ -1106,7 +1106,7 @@ function scp_files_local_2_remote(){
     local failed_count=0
 
     for host_info in "${HOSTS[@]}"; do
-        IFS=',' read -r host port user password <<< "$host_info"
+        IFS=',' read -r host port user password _ <<< "$host_info"
         info "正在传输到 $host:$port ($user)"
 
         # 连接测试
