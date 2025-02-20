@@ -118,10 +118,42 @@ deps_check() {
     local deps=("curl" "expect" "nc")
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
-            error "未找到依赖 $dep,请先安装"
-            exit 1
+            error "未找到依赖 $dep."
+            install_tools "$dep" || exit 1
+            #exit 1
         fi
     done
+}
+
+install_tools() {
+    dep=$1
+    echo "安装依赖: $dep"
+    # 获取操作系统信息
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case "$ID" in
+            ubuntu)
+                # 对于 Ubuntu 系统，使用 apt-get 安装
+                sudo apt-get install -y $dep
+                ;;
+            centos|rocky)
+                # 对于 CentOS 和 Rocky Linux 系统，使用 yum 安装
+                sudo yum install -y $dep
+                ;;
+            fedora)
+                # 对于 Fedora 系统，使用 dnf 安装
+                sudo dnf install -y $dep
+                ;;
+            *)
+                echo "不支持的发行版：$NAME"
+                return 1
+                ;;
+        esac
+    else
+        echo "/etc/os-release 文件不存在，无法判断系统类型。"
+        return 1
+    fi
+    return 0
 }
 
 
