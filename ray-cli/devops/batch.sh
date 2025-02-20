@@ -118,7 +118,7 @@ deps_check() {
     local deps=("curl" "expect" "nc")
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
-            error "未找到依赖 $dep，请先安装"
+            error "未找到依赖 $dep,请先安装"
             exit 1
         fi
     done
@@ -174,7 +174,11 @@ function test_connection() {
                 spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=3 -p $port $user@$host "exit"
                 expect {
                     \"*yes/no*\" { send \"yes\r\"; exp_continue }
-                    \"*password:*\" { send \"$password\r\" }
+                    \"*password:*\" { send \"$password\r\"; exp_continue }
+                    timeout { 
+                        puts \"连接超时\"
+                        exit 1
+                    }
                 }
                 expect eof
                 catch wait result
