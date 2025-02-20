@@ -594,12 +594,16 @@ function ssh_copy_id() {
                 spawn ssh-copy-id -p $port $user@$host
                 expect {
                     \"*yes/no*\" { send \"yes\r\"; exp_continue }
-                    \"*password:*\" { send \"$password\r\" }
+                    \"*password:*\" { send \"$password\r\"; exp_continue }
+                    timeout { 
+                        puts \"连接超时\"
+                        exit 1
+                    }
                 }
                 expect eof
                 catch wait result
                 exit [lindex \$result 3]
-            " &>/dev/null
+            "
             
         elif command -v sshpass >/dev/null 2>&1; then
             info "使用 sshpass 分发公钥"
