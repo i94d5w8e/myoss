@@ -65,17 +65,6 @@ mustn() {
     fi
 }
 
-deps_check() {
-    deps="curl wget unzip grep"
-    for dep in $deps; do
-        if ! command -v "$dep" >/dev/null 2>&1; then
-            err "未找到依赖 $dep"
-            install_tools $dep || exit 1
-            exit 1
-        fi
-    done
-}
-
 install_tools() {
     dep=$1
     echo "安装依赖: $dep"
@@ -105,6 +94,17 @@ install_tools() {
         return 1
     fi
     return 0
+}
+
+deps_check() {
+    deps="curl unzip grep"
+    for dep in $deps; do
+        if ! command -v "$dep" >/dev/null 2>&1; then
+            warn "未找到依赖 $dep"
+            install_tools $dep || exit 1
+            exit 1
+        fi
+    done
 }
 
 
